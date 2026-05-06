@@ -37,6 +37,7 @@ This skill assumes the agent cannot use a browser UI. Prefer WP-CLI, logs, and H
 
 Read:
 - `references/measurement.md`
+- `references/server-timing.md` (Server-Timing HTTP header inspection via the Performance Lab plugin — headless alternative to Query Monitor for per-request baselines)
 
 ### 1) Generate a backend-only performance report (deterministic)
 
@@ -93,6 +94,7 @@ Use the profile output to pick *one* primary bottleneck category:
   - `references/autoload-options.md`
 - **Object cache misses** → introduce caching or fix cache key/group usage; add persistent object cache where appropriate.
   - `references/object-cache.md`
+  - `references/caching-patterns.md` (salted caching, false-value traps, batch ops, cache group gotchas)
 - **Remote HTTP calls** → add timeouts, caching, batching; avoid calling remote APIs on every request.
   - `references/http-api.md`
 - **Cron** → reduce due-now spikes, de-duplicate events, move heavy tasks out of request paths.
