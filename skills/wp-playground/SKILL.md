@@ -95,6 +95,38 @@ npx @wp-playground/cli@latest build-snapshot --blueprint=<file> --outfile=./site
 - **Port already used**: `--port=<free-port>`.
 - **Slow/locked UI**: disable `--experimental-multi-worker` if enabled; or enable it to improve throughput on CPU-bound runs.
 
+## Blueprint Pitfalls
+
+1. **No `file://` URLs.** Playground cannot fetch `file://` URLs in
+   `installPlugin` or `writeFile` steps. Use inline `data` content or the
+   `literal:directory` resource type.
+2. **Mount ordering.** `writeFile` steps execute before `mount` steps in
+   `@wp-playground/cli`. Do not `writeFile` into a directory that will be
+   mounted — the mount will overwrite it. Create content via `runPHP` after
+   the mount is established instead.
+3. **`runPHP` function availability.** WordPress functions (`wp_insert_post`,
+   `update_option`) are only available after WordPress is loaded. Your `runPHP`
+   steps must include `require '/wordpress/wp-load.php';` at the top.
+4. **PHP namespace escaping in JSON.** Backslashes in PHP namespaces
+   (e.g., `MyPlugin\Database_Schema`) must be double-escaped in JSON:
+   `"MyPlugin\\\\Database_Schema"`. A single `\\` is eaten by JSON.
+5. **WP-CLI stubs.** If a plugin uses `WP_CLI::add_command()`, it will fatal
+   when loaded via `runPHP`. Add: `if (!defined('WP_CLI')) { define('WP_CLI', false); }`
+6. **`runCLI()` JS API mount syntax.** The JavaScript API uses
+   `mount: [{ hostPath, vfsPath }]` (array of objects). Do NOT use
+   colon-delimited strings (`'/host:/vfs'`) — that is the CLI flag syntax.
+   Do NOT use `autoMount` — its directory detection heuristics are unreliable.
+7. **Mount does NOT activate.** Mounting a plugin into `wp-content/plugins/`
+   copies files but does not activate the plugin. You MUST add an
+   `activatePlugin` blueprint step separately.
+8. **Host-specific functions.** Plugins that call functions defined by their
+   host platform (e.g., managed-host helpers, custom mu-plugin globals) will
+   fatal in Playground. Write a polyfill mu-plugin via `writeFile` before
+   any `activatePlugin` step.
+9. **`networkidle` never resolves.** WP Playground WASM maintains persistent
+   connections. Never use Playwright's `waitForLoadState('networkidle')`.
+   Use `domcontentloaded` followed by an explicit element wait.
+
 ## Escalation
 
 - If PHP extensions or native DB access are required, Playground may be unsuitable; fall back to full WP stack or wp-env/Docker.
