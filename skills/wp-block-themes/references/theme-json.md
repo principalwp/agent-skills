@@ -57,3 +57,34 @@ References:
 
 - Border radius presets: https://make.wordpress.org/core/2025/11/12/theme-json-border-radius-presets-support-in-wordpress-6-9/
 - Form element styling: https://developer.wordpress.org/news/2025/11/how-wordpress-6-9-gives-forms-a-theme-json-makeover/
+
+## Fonts
+
+Families live in `settings.typography.fontFamilies`:
+
+```json
+{
+  "settings": {
+    "typography": {
+      "fontFamilies": [
+        {
+          "name": "Inter",
+          "slug": "inter",
+          "fontFamily": "'Inter', system-ui, sans-serif",
+          "fontFace": [
+            { "fontFamily": "Inter", "fontWeight": "400 700", "src": [ "file:./assets/fonts/Inter.woff2" ] }
+          ]
+        }
+      ]
+    }
+  }
+}
+```
+
+Reminders:
+- `file:./` resolves from the theme root.
+- Generated CSS var: `var(--wp--preset--font-family--{slug})`.
+- `@font-face` is auto-emitted when the family is used; **preload is NOT** — add `<link rel="preload" as="font" crossorigin>` in `wp_head` for LCP-critical fonts.
+- One variable-font range entry (`"400 700"`) beats multiple per-weight entries.
+- Prefer self-hosted `.woff2` over third-party font CDNs (extra DNS/TLS hurts LCP).
+- For admin-installable fonts, `wp_register_font_collection()` (WP 6.5+) is the programmatic route.
