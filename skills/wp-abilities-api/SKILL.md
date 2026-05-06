@@ -93,3 +93,9 @@ Use the documented init hooks for Abilities API registration so they load at the
 - For canonical details, consult:
   - `references/rest-api.md`
   - `references/php-registration.md`
+  - `references/execution-and-annotations.md`
+
+## Deep reference
+
+For non-obvious internals (7-step execution pipeline, annotation semantics, HTTP method mapping, name format regex, core abilities list), see:
+- `references/execution-and-annotations.md`
