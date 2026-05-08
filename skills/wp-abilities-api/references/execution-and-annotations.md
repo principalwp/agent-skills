@@ -20,13 +20,23 @@ Hooks at steps 4 and 7 allow cross-cutting concerns (logging, auditing) without 
 
 Three annotation properties control behavior metadata:
 
-| Annotation | Default | Meaning |
-|------------|---------|---------|
-| `readonly` | `null` | Ability only reads data, never modifies |
-| `destructive` | `null` | Ability removes or irreversibly changes data |
-| `idempotent` | `null` | Repeated calls produce the same result |
+| Annotation    | Default | Meaning                                       |
+|---------------|---------|-----------------------------------------------|
+| `readonly`    | `false` | Ability only reads data, never modifies       |
+| `destructive` | `true`  | Ability removes or irreversibly changes data  |
+| `idempotent`  | `false` | Repeated calls produce the same result        |
 
-All default to `null` (unknown/unset).
+**The defaults are unsafe — always set all three explicitly.** A read-only ability that doesn't set `destructive => false` is treated as state-modifying by MCP clients, which routes it to confirmation flows and slows the agent loop. Defaults are intentionally cautious so missing annotations fail closed, but that means "I forgot to annotate" stays silent until production.
+
+```php
+'meta' => [
+    'annotations' => [
+        'readonly'    => true,   // never default this
+        'destructive' => false,  // never default this
+        'idempotent'  => true,   // never default this
+    ],
+],
+```
 
 ## HTTP method mapping (REST)
 
