@@ -170,10 +170,16 @@ See `references/debugging.md`.
   - `getServerState()` and `getServerContext()` now reset between page transitions—ensure your code doesn't assume stale values persist.
   - Router regions now support `attachTo` for rendering overlays (modals, pop-ups) dynamically.
 
+## Deep reference
+
+For non-obvious internals (SSR-skipped elements, server vs client-only directives, namespace separator, client navigation APIs, navigate timeout, **persisting state across navigations via cookies/user meta**, **hydrating core blocks with `WP_HTML_Tag_Processor` + `data-wp-*` injection**), see:
+- `references/interactivity-internals.md`
+
 ## Escalation
 
 - If repo build constraints are unclear, ask: "Is this using `@wordpress/scripts` or a custom bundler (webpack/vite)?"
 - Consult:
   - `references/server-side-rendering.md`
   - `references/directives-quickref.md`
+  - `references/interactivity-internals.md`
   - `references/debugging.md`
