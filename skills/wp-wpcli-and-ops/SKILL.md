@@ -1,6 +1,6 @@
 ---
 name: wp-wpcli-and-ops
-description: "Use when working with WP-CLI (wp) for WordPress operations: safe search-replace, db export/import, plugin/theme/user/content management, cron, cache flushing, multisite, and scripting/automation with wp-cli.yml."
+description: "Use when working with WP-CLI (wp) for WordPress operations: safe search-replace, db export/import, plugin/theme/user/content management, cron, cache flushing, multisite, scripting/automation with wp-cli.yml, eval/eval-file/shell, aliases and remote execution, and buried subcommands (option pluck/patch, verify-checksums, profile, doctor)."
 compatibility: "Targets WordPress 6.9+ (PHP 7.2.24+). Requires WP-CLI in the execution environment."
 ---
 
@@ -95,6 +95,54 @@ For repeatable ops, prefer:
 
 Read:
 - `references/automation.md`
+
+### 4) Eval, eval-file, and shell
+
+WP-CLI is also a PHP-with-WordPress-loaded script runner. For one-liners,
+multi-line scripts, or interactive REPL sessions:
+
+Read:
+- `references/eval-and-shell.md`
+
+The most-bitten gotcha: `wp eval '$wpdb->...'` silently runs against `null`
+because `$wpdb` is not in scope by default. Always `global $wpdb;` first.
+
+### 5) Aliases and remote execution
+
+For running across multiple environments, containers, or remote hosts:
+
+```bash
+wp @prod plugin list
+wp @all core update --dry-run
+wp --ssh=docker:wordpress option get home
+```
+
+Read:
+- `references/aliases-and-remote.md`
+
+The most-bitten gotcha: non-interactive SSH skips `.bashrc`, so `$PATH` and
+aliases don't apply on the remote side. "Works locally, fails over `--ssh`"
+is almost always this.
+
+### 6) Buried subcommands
+
+Subcommands that solve common problems but don't appear in tutorials:
+
+- `wp option pluck` / `patch` and `wp post meta pluck` / `patch` /
+  `clean-duplicates` — nested values without round-tripping through PHP
+- `wp option get-autoload` / `set-autoload` — autoload bloat fix
+- `wp transient type` — diagnostic for "is Redis actually wired up"
+- `wp core verify-checksums` / `wp plugin verify-checksums --all --strict`
+  — partial-install + intrusion detection
+- `wp profile` (package) — backend performance profiling
+- `wp doctor` (package) — configurable health checks
+- `wp media regenerate --image_size=foo --only-missing` — targeted
+  thumbnail rebuild
+- `wp scaffold` — boilerplate generators
+- `wp cli has-command` — for portable shell scripts
+
+Read:
+- `references/buried-subcommands.md`
 
 ## Verification
 
