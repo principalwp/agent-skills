@@ -1,6 +1,6 @@
 ---
 name: wp-block-development
-description: "Use when developing WordPress (Gutenberg) blocks: block.json metadata, register_block_type(_from_metadata), attributes/serialization, supports, dynamic rendering (render.php/render_callback), deprecations/migrations, viewScript vs viewScriptModule, and @wordpress/scripts/@wordpress/create-block build and test workflows."
+description: "Use when developing WordPress (Gutenberg) blocks: block.json metadata, register_block_type(_from_metadata), attributes/serialization, supports, dynamic rendering (render.php/render_callback), deprecations/migrations, viewScript vs viewScriptModule, @wordpress/scripts/@wordpress/create-block build and test workflows, and inline content within paragraphs (registerFormatType, RichText format API)."
 compatibility: "Targets WordPress 6.9+ (PHP 7.2.24+). Filesystem-based agent with bash + node. Some workflows require WP-CLI."
 ---
 
@@ -16,6 +16,7 @@ Use this skill for block work such as:
 - adding dynamic rendering (`render.php` / `render_callback`)
 - block deprecations and migrations (`deprecated` versions)
 - build tooling for blocks (`@wordpress/scripts`, `@wordpress/create-block`, `wp-env`)
+- building inline content within paragraphs (`registerFormatType`, RichText formats)
 
 ## Inputs required
 
@@ -35,7 +36,20 @@ Use this skill for block work such as:
 
 If this repo is a full site (`wp-content/` present), be explicit about *which* plugin/theme contains the block.
 
-### 1) Create a new block (if needed)
+### 1) Check for inline requirements FIRST
+
+Before creating any block, check whether the requirement asks for content that
+flows **inline within paragraph text** (e.g., "inline badge," "widget inside a
+sentence," "inline weather display"). If it does, **do not register a block** —
+use the RichText Format API instead.
+
+Read:
+- `references/inline-and-format-types.md`
+
+If the requirement is for a block-level element (its own line in the editor),
+continue to step 2.
+
+### 2) Create a new block (if needed)
 
 If you are creating a new block, prefer scaffolding rather than hand-rolling structure:
 
@@ -50,7 +64,7 @@ After scaffolding:
 1. Re-run the block list script and confirm the new block root.
 2. Continue with the remaining steps (model choice, metadata, registration, serialization).
 
-### 2) Ensure apiVersion 3 (WordPress 6.9+)
+### 3) Ensure apiVersion 3 (WordPress 6.9+)
 
 WordPress 6.9 enforces `apiVersion: 3` in the block.json schema. Blocks with apiVersion 2 or lower trigger console warnings when `SCRIPT_DEBUG` is enabled.
 
@@ -66,7 +80,7 @@ WordPress 6.9 enforces `apiVersion: 3` in the block.json schema. Blocks with api
 Read:
 - `references/block-json.md` (apiVersion and schema details)
 
-### 3) Pick the right block model
+### 4) Pick the right block model
 
 - **Static block** (markup saved into post content): implement `save()`; keep attributes serialization stable.
 - **Dynamic block** (server-rendered): use `render` in `block.json` (or `render_callback` in PHP) and keep `save()` minimal or `null`.
@@ -74,7 +88,7 @@ Read:
   - Prefer `viewScriptModule` for modern module-based view scripts where supported.
   - If you're working primarily on `data-wp-*` directives or stores, also use `wp-interactivity-api`.
 
-### 4) Update `block.json` safely
+### 5) Update `block.json` safely
 
 Make changes in the block’s `block.json`, then confirm registration matches metadata.
 
@@ -87,7 +101,7 @@ Common pitfalls:
 - changing saved markup without adding `deprecated` causes “Invalid block”
 - adding attributes without defining source/serialization correctly causes “attribute not saving”
 
-### 5) Register the block (server-side preferred)
+### 6) Register the block (server-side preferred)
 
 Prefer PHP registration using metadata, especially when:
 
@@ -98,7 +112,7 @@ Prefer PHP registration using metadata, especially when:
 Read and apply:
 - `references/registration.md`
 
-### 6) Implement edit/save/render patterns
+### 7) Implement edit/save/render patterns
 
 Follow wrapper attribute best practices:
 
@@ -106,11 +120,15 @@ Follow wrapper attribute best practices:
 - Static save: `useBlockProps.save()`
 - Dynamic render (PHP): `get_block_wrapper_attributes()`
 
+If the block reads per-post data (content, meta, title, excerpt, etc.), read
+the context reference to ensure the editor component works inside Query Loop:
+- `references/context-and-query-loop.md`
+
 Read:
 - `references/supports-and-wrappers.md`
 - `references/dynamic-rendering.md` (if dynamic)
 
-### 7) Inner blocks (block composition)
+### 8) Inner blocks (block composition)
 
 If your block is a “container” that nests other blocks, treat Inner Blocks as a first-class feature:
 
@@ -120,7 +138,7 @@ If your block is a “container” that nests other blocks, treat Inner Blocks a
 Read:
 - `references/inner-blocks.md`
 
-### 8) Attributes and serialization
+### 9) Attributes and serialization
 
 Before changing attributes:
 
@@ -130,7 +148,7 @@ Before changing attributes:
 Read:
 - `references/attributes-and-serialization.md`
 
-### 9) Migrations and deprecations (avoid "Invalid block")
+### 10) Migrations and deprecations (avoid "Invalid block")
 
 If you change saved markup or attributes:
 
@@ -140,15 +158,54 @@ If you change saved markup or attributes:
 Read:
 - `references/deprecations.md`
 
-### 10) Tooling and verification commands
+### 11) Tooling and verification commands
 
 Prefer whatever the repo already uses:
 
 - `@wordpress/scripts` (common) → run existing npm scripts
-- `wp-env` (common) → use for local WP + E2E
+- WP Playground (preferred) or `wp-env` → use for local WP + E2E
 
 Read:
 - `references/tooling-and-testing.md`
+
+### 12) Editor data fetching patterns
+
+When a block’s `edit.js` fetches data (REST endpoints, `apiFetch`, external
+services), follow these patterns:
+
+**Three-state rendering**: Every data-fetching component must handle loading,
+success, and error states explicitly:
+```jsx
+const [ data, setData ] = useState( null );
+const [ isLoading, setIsLoading ] = useState( false );
+const [ error, setError ] = useState( null );
+
+// In render:
+if ( isLoading ) return <Spinner />;
+if ( error ) return <Notice status=”error”>{ error }</Notice>;
+if ( ! data ) return <Placeholder>...</Placeholder>;
+```
+
+**Visible error handling**: Never silently swallow fetch errors. Every `catch`
+block must set an error state that renders user-visible feedback:
+- BAD: `catch (_e) { setResults([]); }` — user sees empty results, no
+  explanation
+- GOOD: `catch (err) { setError( err.message ); }` — user sees what went wrong
+
+**Endpoint verification**: When calling custom REST endpoints via `apiFetch`,
+verify the endpoint path and method match the PHP `register_rest_route()`
+registration. Common mismatches:
+- Path prefix: `/wp/v2/` (core) vs `/my-plugin/v1/` (custom)
+- Method: `GET` vs `POST` (especially for search endpoints with body params)
+- Capability: editor needs `edit_posts` but endpoint requires `manage_options`
+
+**Testing strategy for data fetching** (all E2E via Playwright + WP Playground):
+- Test REST endpoint response shape via `page.request.get()`
+- Test permission gates by authenticating as different user roles
+- Test error states by intercepting API calls with `page.route()` or Blueprint
+  `runPHP` steps injecting `pre_http_request` filters
+- Test all three component states (loading, success, error) by navigating to
+  the block on the frontend under each condition
 
 ## Verification
 
@@ -165,6 +222,14 @@ If something fails, start here:
 - `references/debugging.md` (common failures + fastest checks)
 - `references/attributes-and-serialization.md` (attributes not saving)
 - `references/deprecations.md` (invalid block after change)
+- `references/inline-and-format-types.md` (block renders with line breaks instead of inline — wrong API choice)
+
+## Deep reference
+
+For non-obvious block system behaviors (naming regex, global attributes, render internals, block hooks scope, HTML API patterns, block bindings, editor data stores), see:
+- `references/block-api-internals.md`
+- `references/editor-data-stores.md`
+- `references/extension-points.md` — block variations, `editor.BlockEdit` / `blocks.registerBlockType` filter hooks, block transforms (use when extending core blocks or touching many blocks at once)
 
 ## Escalation
 
