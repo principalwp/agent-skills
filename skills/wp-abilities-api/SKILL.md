@@ -93,3 +93,12 @@ Use the documented init hooks for Abilities API registration so they load at the
 - For canonical details, consult:
   - `references/rest-api.md`
   - `references/php-registration.md`
+  - `references/execution-and-annotations.md`
+
+## Deep reference
+
+For non-obvious internals (7-step execution pipeline, annotation semantics, HTTP method mapping, REST opt-in), see:
+- `references/execution-and-annotations.md`
+
+For production patterns and traps (registration timing silent failures, MCP exposure double-gating, Action Scheduler pattern for sync execution, schema validator quirks, capability grafting via `wp_register_ability_args`, custom `WP_Ability` subclasses, three return shapes from `execute()`, versioning workarounds), see:
+- `references/production-patterns.md`
