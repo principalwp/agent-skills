@@ -49,6 +49,15 @@ If this is a full site repo, pick the specific plugin/theme before changing code
   - Prefer a controller class (`WP_REST_Controller` subclass) for anything non-trivial.
   - Read `references/routes-and-endpoints.md` and `references/schema.md`.
 
+### 1b) Resource endpoint completeness
+
+When building a REST API for a resource (CPT, custom data), consider that
+consumers (mobile apps, SPAs, third-party integrations) typically expect
+standard REST patterns: both a collection endpoint (`GET /resources`) and a
+single-item endpoint (`GET /resources/{id}`). If you omit the single-item
+endpoint, document the rationale as a design decision — it is almost always
+needed.
+
 ### 2) Register routes safely (namespaces, methods, permissions)
 
 - Use a unique namespace `vendor/v1`; avoid `wp/*` unless core.
@@ -108,6 +117,11 @@ Read `references/discovery-and-params.md`.
 - `_doing_it_wrong` for missing `permission_callback`: add it (use `__return_true` if public).
 - Invalid params: missing/incorrect `args` schema or validation callbacks.
 - Fields missing: `show_in_rest` false, meta not registered, or CPT lacks `custom-fields` support.
+
+## Deep reference
+
+For non-obvious REST API behaviors (parameter resolution priority, batch operations, authentication filter, pagination limits, error format), see:
+- `references/rest-api-internals.md`
 
 ## Escalation
 
